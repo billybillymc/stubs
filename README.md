@@ -164,6 +164,9 @@ in a diff.
 ---
 
 *Built by Billy Gardner McIntyre <https://gardnermcintyre.com>*
+
 *Source <https://github.com/billybillymc/stubs>*
+
+*See it live <https://gardnermcintyre.com/stubs>*
 
 *Licence: MIT — see `LICENSE`.
