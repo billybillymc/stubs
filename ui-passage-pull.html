@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ticket Stubs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#f4ead4;--ink-soft:#cbb69a;--ink-faint:#9a897a;--amber:#d8a24a;
+    --panel:rgba(18,14,12,.82);--line:rgba(255,238,222,.16);
+    --mono:"Space Mono",monospace;--disp:"Oswald",system-ui,sans-serif;
+    --hand:"Caveat","Segoe Script",cursive;--paper:#f1e8cf;--pen:#2c3a63}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#0d0b0a;color:var(--ink);
+    font-family:var(--disp);-webkit-font-smoothing:antialiased}
+  canvas#stage{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:pointer}
+
+  #fader{position:fixed;inset:0;background:#0b0908;opacity:0;pointer-events:none;
+    transition:opacity .5s ease;z-index:40}
+  #fader.on{opacity:1}
+  #loader{position:fixed;inset:0;display:flex;flex-direction:column;gap:14px;align-items:center;
+    justify-content:center;z-index:50;background:#0b0908;transition:opacity .6s ease}
+  #loader.off{opacity:0;pointer-events:none}
+  #loader p{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--ink-faint);margin:0}
+  #bar{width:210px;height:1px;background:rgba(255,238,222,.14);overflow:hidden}
+  #bar i{display:block;height:100%;width:0;background:var(--amber);
+    box-shadow:0 0 12px rgba(216,162,74,.7);transition:width .25s ease}
+  #lpct{font-size:9px;letter-spacing:.34em;color:rgba(216,162,74,.75)}
+
+  #hud{position:fixed;inset:0;z-index:20;pointer-events:none;opacity:0;transition:opacity .5s ease}
+  #hud.on{opacity:1}
+  #hud button{pointer-events:auto;font-family:var(--mono);background:var(--panel);color:var(--ink);
+    border:1px solid var(--line);border-radius:8px;cursor:pointer;transition:.15s;backdrop-filter:blur(6px)}
+  #hud button:hover{border-color:var(--amber);color:var(--amber)}
+  /* What I wrote down that night: ballpoint on a pale ruled scrap,
+     sitting a little crooked under a strip of tape. The red ink is the
+     date — the thing you check first, years later. */
+  #card{position:absolute;left:18px;bottom:16px;max-width:330px;
+    background:
+      linear-gradient(rgba(140,110,60,.06),rgba(140,110,60,.14)),
+      repeating-linear-gradient(0deg,transparent 0 25px,rgba(96,118,168,.15) 25px 26px),
+      var(--paper);
+    border-radius:2px 5px 3px 6px;padding:13px 18px 11px 20px;
+    transform:rotate(-1.7deg);
+    box-shadow:0 10px 26px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.35)}
+  #card::before{content:"";position:absolute;top:-9px;left:50%;width:76px;height:20px;
+    transform:translateX(-50%) rotate(1.4deg);
+    background:rgba(244,236,214,.30);border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  #card h2{font-family:var(--hand);font-size:28px;font-weight:700;letter-spacing:.01em;
+    line-height:1.02;margin:0 0 2px;text-transform:none;color:#233057}
+  #card .r{font-family:var(--hand);font-size:19px;line-height:1.22;color:var(--pen);
+    margin-top:1px;letter-spacing:.01em}
+  #card .r b{color:#8c2f2a;font-weight:600}
+  #nav{position:absolute;right:20px;bottom:20px;display:flex;align-items:center;gap:9px}
+  #nav button{font-size:14px;width:40px;height:40px;border-radius:50%}
+  /* nothing is counted at you any more: one quiet "i" in the corner,
+     and the instructions live behind it */
+  #infobtn{font-family:Georgia,"Times New Roman",serif;font-style:italic;
+    font-size:23px;font-weight:600;line-height:1;padding:0 0 3px}
+  #infobtn.on{border-color:var(--amber);color:var(--amber)}
+  /* swallows the click that dismisses the balloon, so putting it away
+     never also grabs the ticket underneath */
+  #shield{position:fixed;inset:0;z-index:29;display:none}
+  #shield.on{display:block}
+  #mute{position:absolute;top:18px;right:20px;font-size:10px;letter-spacing:.18em;padding:8px 12px}
+
+  /* the first-ticket pull coach: what to do, and which way is down */
+  #pullhint{position:fixed;left:50%;top:55%;transform:translateX(-50%);z-index:22;
+    display:flex;flex-direction:column;align-items:center;gap:11px;
+    pointer-events:none;opacity:0;transition:opacity .45s ease}
+  #pullhint.on{opacity:1}
+  #pullhint .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.28em;
+    color:var(--amber);text-shadow:0 0 12px rgba(216,162,74,.55);white-space:nowrap}
+  #pullhint .track{width:2px;height:64px;background:rgba(255,238,222,.13);
+    border-radius:1px;position:relative}
+  #pullhint .track i{position:absolute;left:50%;top:0;width:10px;height:10px;
+    border-right:2px solid var(--amber);border-bottom:2px solid var(--amber);
+    transform:translateX(-50%) rotate(45deg);
+    animation:ph-drop 1.5s ease-in infinite}
+  @keyframes ph-drop{
+    0%{top:-6px;opacity:0}
+    22%{opacity:1}
+    72%{opacity:1}
+    100%{top:58px;opacity:0}
+  }
+  /* ------- THE VOICE FROM OFF FRAME -------------------------------
+     Once the stub is in the binder, somebody just out of shot says a
+     line about the night you have filed. It is DRAWN, not boxed: the
+     corners are uneven ellipses, the ink goes round twice the way a
+     pen does, and the tail is a real tapering flick — an open SVG
+     path, stroked down both outer edges and left open across its
+     mouth, so the line reads as one unbroken balloon. It runs past
+     the right edge of the screen and is cut off by it, because that
+     is where they are standing.
+     Only tickets with a caption get one; the desk is captions.html. */
+  #say{position:fixed;right:0;bottom:20%;z-index:30;pointer-events:none;
+    transform:translateX(calc(100% + 90px));opacity:0;
+    transition:transform .58s cubic-bezier(.16,.86,.26,1),opacity .3s ease}
+  #say.on{transform:translateX(-58px);opacity:1}
+  #say .bub,#howto .bub{position:relative;max-width:min(var(--saywd,300px),46vw);
+    padding:22px 30px 20px 28px;transform:rotate(-1.4deg);
+    filter:drop-shadow(0 16px 30px rgba(0,0,0,.55)) drop-shadow(0 4px 7px rgba(0,0,0,.4))}
+  #say .paper,#howto .paper{position:absolute;inset:0;z-index:0;
+    border:3px solid rgba(52,38,24,.72);
+    border-radius:36px 44px 32px 46px / 44px 34px 48px 34px;
+    background:radial-gradient(130% 120% at 20% 2%,rgba(255,253,244,.72),rgba(0,0,0,0) 58%),
+      var(--paper);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+  /* gone round twice, the way a pen does */
+  #say .paper::after,#howto .paper::after{content:"";position:absolute;inset:-5px -3px -2px -6px;
+    border:1.5px solid rgba(52,38,24,.28);border-radius:inherit;transform:rotate(.6deg)}
+  #say .tail{position:absolute;right:-70px;bottom:11px;width:82px;height:56px;
+    z-index:1;overflow:visible}
+  #say .tail path,#howto .tail path{fill:var(--paper);stroke:rgba(52,38,24,.72);
+    stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  #say p,#howto p{position:relative;z-index:2;margin:0;white-space:pre-wrap;
+    font-family:var(--hand);font-size:min(var(--saysz,26px),6.2vw);line-height:1.16;
+    letter-spacing:.006em;color:#2f2a22;text-wrap:balance}
+  /* it arrives with some weight — swings in, overshoots, settles */
+  #say.on .bub{animation:bub-in .78s cubic-bezier(.2,.86,.3,1) both}
+  #say.on p{animation:bub-tx .46s ease .15s both}
+  @keyframes bub-in{
+    0%{transform:rotate(5.5deg) scale(.92)}
+    50%{transform:rotate(-3.2deg) scale(1.025)}
+    78%{transform:rotate(-.4deg) scale(.995)}
+    100%{transform:rotate(-1.4deg) scale(1)}
+  }
+  @keyframes bub-tx{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+  /* ------- WHAT THE HAND IS FOR -----------------------------------
+     The same balloon as the voice, only this one is asked for: it
+     hangs above the "i" and its tail drops onto the icon, so it reads
+     as the corner speaking rather than a panel arriving. */
+  #howto{position:fixed;right:14px;bottom:78px;z-index:31;pointer-events:none;
+    opacity:0;transform:translateY(12px) scale(.95);transform-origin:86% 108%;
+    transition:opacity .2s ease,transform .34s cubic-bezier(.16,.86,.26,1)}
+  #howto.on{opacity:1;transform:none}
+  /* it needs more of a narrow screen than the voice does — there is
+     no room to be coy when you are the only instructions */
+  #howto .bub{--saysz:20px;max-width:min(408px,86vw);
+    padding:21px 26px 18px 25px;transform:rotate(-.7deg)}
+  /* the voice is untouchable; this one carries links, so it takes the
+     pointer back while it is open. Clicks that land on it stay on it —
+     only the shield behind closes the balloon. */
+  #howto.on .bub{pointer-events:auto}
+  #howto .tail{position:absolute;right:14px;bottom:-40px;width:56px;height:46px;
+    z-index:1;overflow:visible}
+  /* the voice sets pre-wrap so a caption keeps its own line breaks;
+     this one is written as markup and wraps like prose */
+  #howto p{white-space:normal}
+  #howto p+p{margin-top:7px}
+  #howto p{line-height:1.14}
+  #howto .lede{font-size:calc(var(--saysz) * 1.08);color:#241f18}
+  /* the three rooms, as a written column: the name of the room, and
+     what the hand does there set beside it. A grid rather than a list
+     so every instruction starts on the same line down the card, and
+     baseline alignment so a two-line instruction still sits level with
+     its name. */
+  #howto dl{position:relative;z-index:2;margin:13px 0 0;
+    display:grid;grid-template-columns:auto 1fr;column-gap:13px;row-gap:9px;
+    align-items:baseline}
+  #howto dt,#howto dd{font-family:var(--hand);
+    font-size:min(var(--saysz),6.2vw);line-height:1.14;letter-spacing:.006em}
+  #howto dt{margin:0;font-weight:700;color:#5c3f22;white-space:nowrap}
+  #howto dd{margin:0;color:#2f2a22}
+  #howto b{font-weight:700;color:#5c3f22}
+  #howto .aside{margin-top:10px;color:#4d4438}
+  /* One key to a line, the caps ranged right against the gutter and
+     what they do ranged left off it. Both columns are content-sized so
+     the pair sits centred in the card — a legend under a plate, not
+     another paragraph. The grid pairs a key with its label by row, so
+     neither can be stranded by a line break. */
+  #howto .keys{position:relative;z-index:2;margin:15px 0 0;
+    display:grid;grid-template-columns:auto auto;justify-content:center;
+    column-gap:10px;row-gap:7px;align-items:center;
+    font-family:var(--mono);font-size:9px;letter-spacing:.13em;
+    line-height:1.5;color:#6b5f4e}
+  #howto .keys kbd{justify-self:end}
+  #howto .keys span{white-space:nowrap;justify-self:start}
+  #howto kbd{font-family:var(--mono);font-size:9px;color:#3b2f22;
+    background:rgba(52,38,24,.09);border:1px solid rgba(52,38,24,.32);
+    border-radius:4px;padding:2px 5px}
+  #howto .sig{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;
+    justify-content:space-between;position:relative;z-index:2;
+    margin-top:13px;padding-top:10px;border-top:1px solid rgba(52,38,24,.2);
+    font-family:var(--hand);font-size:calc(var(--saysz) * .88);color:#4d4438}
+  /* A link on paper does not light up blue, it gets gone over: the
+     hover is a highlighter stroke wiped across it left to right, the
+     rule under it inking in from a ghost to a line. The padding is
+     cancelled by an equal negative margin so nothing shifts when the
+     wash appears. */
+  #howto a{position:relative;z-index:2;color:#8c2f2a;text-decoration:none;
+    cursor:pointer;padding:1px 4px;margin:0 -4px;border-radius:3px;
+    border-bottom:2px solid rgba(140,47,42,.3);
+    background-image:linear-gradient(rgba(216,162,74,.42),rgba(216,162,74,.42));
+    background-repeat:no-repeat;background-position:0 100%;background-size:0 100%;
+    transition:background-size .24s cubic-bezier(.2,.8,.3,1),
+               color .15s ease,border-bottom-color .15s ease}
+  #howto a:hover,#howto a:focus-visible{color:#5e1d1a;
+    border-bottom-color:#8c2f2a;background-size:100% 100%}
+  #howto a:focus-visible{outline:2px solid rgba(140,47,42,.55);outline-offset:2px}
+  #howto a:active{color:#3f1310;background-image:linear-gradient(
+    rgba(216,162,74,.62),rgba(216,162,74,.62))}
+  /* on a short screen the card would run off the top of the frame */
+  @media (max-height:660px){#howto .bub{--saysz:17px;padding:16px 20px 14px 19px}
+    #howto .keys{line-height:1.9}}
+  @media (max-width:760px){#card{max-width:calc(100vw - 120px)}}
+</style>
+<script src="data.js"></script>
+<script src="captions.js"></script>
+<script src="runtimes.js"></script>
+<script src="posters.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="hud">
+  <div id="card"><h2>—</h2><div class="r" id="r1"></div><div class="r" id="r2"></div></div>
+  <div id="nav"><button id="infobtn" aria-expanded="false" aria-label="how this works">i</button></div>
+  <button id="mute">♪ ON</button>
+</div>
+<div id="shield"></div>
+<div id="howto">
+  <div class="bub">
+    <span class="paper"></span>
+    <!-- the tail drops out of the bottom edge and lands on the icon -->
+    <svg class="tail" viewBox="0 0 56 46" aria-hidden="true">
+      <path d="M7 3 C 13 19, 25 33, 51 44 C 31 29, 23 17, 31 2"/>
+    </svg>
+    <p class="lede">What to do with the tickets.</p>
+    <dl>
+      <dt>Outside</dt><dd>click the ticket, pull down. It tears.</dd>
+      <dt>Inside</dt><dd>click your half, pull down. Pocket it.</dd>
+      <dt>Home</dt><dd>click it, pull down. Into the binder.</dd>
+    </dl>
+    <p class="aside">In the binder, click a page to turn it back and any stub to hold it up to the lamp.</p>
+    <p class="keys">
+      <kbd>space</kbd><span>does the pull for you</span>
+      <kbd>←</kbd><span>takes a step backward</span>
+      <kbd>i</kbd><span>pulls up information</span>
+    </p>
+    <div class="sig">
+      <span>by <a href="https://gardnermcintyre.com" target="_blank" rel="noopener">Billy Gardner McIntyre</a></span>
+      <a class="mk" href="https://github.com/billybillymc/stubs" target="_blank" rel="noopener">make your own →</a>
+    </div>
+  </div>
+</div>
+<div id="say">
+  <div class="bub">
+    <span class="paper"></span>
+    <svg class="tail" viewBox="0 0 82 56" aria-hidden="true">
+      <path d="M5 5 C 32 11, 58 26, 80 52 C 54 44, 28 35, 3 32"/>
+    </svg>
+    <p id="saytx"></p>
+  </div>
+</div>
+<div id="fader"></div>
+<div id="pullhint"><div class="lbl">—</div><div class="track"><i></i></div></div>
+<div id="loader">
+  <p id="lmsg">DO YOU COME TO THIS PLACE FOR MAGIC?</p>
+  <div id="bar"><i></i></div>
+  <p id="lpct">0%</p>
+</div>
+
+<script type="module" src="./passage/main.js"></script>
+</body>
+</html>

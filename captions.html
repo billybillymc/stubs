@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Caption Desk — a line for every night</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#f4ead4;--ink-soft:#cbb69a;--ink-faint:#9a897a;--amber:#d8a24a;
+    --line:rgba(255,238,222,.16);
+    --mono:"Space Mono",monospace;--disp:"Oswald",system-ui,sans-serif;
+    --hand:"Caveat","Segoe Script",cursive;--paper:#f1e8cf;--pen:#2c3a63}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#0d0b0a;color:var(--ink);
+    font-family:var(--mono);-webkit-font-smoothing:antialiased}
+  body{display:flex;flex-direction:column}
+
+  header{display:flex;align-items:center;gap:11px;flex-wrap:wrap;
+    padding:13px 18px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  h1{font-family:var(--disp);font-size:15px;font-weight:500;letter-spacing:.3em;
+    color:var(--amber);margin:0}
+  .sub{font-size:9px;letter-spacing:.16em;color:var(--ink-faint)}
+  .sp{flex:1 1 auto}
+  input,textarea,button,a.btn{font-family:var(--mono);color:var(--ink);
+    background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:7px}
+  input[type=search]{padding:8px 11px;font-size:11px;width:240px}
+  button,a.btn{padding:8px 12px;font-size:10px;letter-spacing:.18em;cursor:pointer;
+    transition:.15s;text-decoration:none;display:inline-block}
+  button:hover,a.btn:hover{border-color:var(--amber);color:var(--amber)}
+  button.warn:hover{border-color:#c05a4a;color:#e08878}
+  .tally{font-size:9.5px;letter-spacing:.16em;color:var(--ink-faint);white-space:nowrap}
+  .tally b{color:var(--amber);font-weight:400}
+  label.chk{font-size:9.5px;letter-spacing:.14em;color:var(--ink-faint);
+    display:flex;align-items:center;gap:6px;cursor:pointer}
+
+  main{flex:1 1 auto;overflow:auto;padding:6px 14px 240px}
+  .row{display:flex;gap:12px;align-items:flex-start;padding:9px 10px;
+    border-bottom:1px solid rgba(255,238,222,.07);border-left:2px solid transparent}
+  .row.has{border-left-color:var(--amber)}
+  .row.cur{background:rgba(216,162,74,.09)}
+  .row img{width:46px;height:64px;object-fit:cover;flex:0 0 auto;
+    background:#1a1512;border-radius:2px;cursor:zoom-in;
+    border:1px solid transparent;transition:border-color .15s}
+  .row img:hover{border-color:var(--amber)}
+
+  /* THE SCAN, FULL SIZE. The boxes above are only worth anything if the
+     paper they are being checked against is legible, and a 46px thumb
+     is not legible. */
+  #lb{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;
+    align-items:center;justify-content:center;gap:15px;padding:26px;
+    background:rgba(8,7,6,.95);backdrop-filter:blur(7px);cursor:zoom-out}
+  #lb.on{display:flex}
+  /* Out of the flow entirely, centred on the middle of the screen. A
+     CSS rotation does not change an element's LAYOUT box, so a turned
+     scan left the column reserving portrait height while painting
+     landscape, and sat on top of its own caption. Absolute, it pushes
+     nothing around and the caption keeps its place at the foot. */
+  #lb img{position:absolute;top:50%;left:50%;
+    max-width:min(92vw,1100px);max-height:72vh;object-fit:contain;
+    border-radius:2px;background:#1a1512;cursor:default;
+    box-shadow:0 24px 70px rgba(0,0,0,.75)}
+  #lb .cap{position:absolute;left:0;right:0;bottom:44px;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;
+    color:var(--ink-soft);text-align:center;max-width:80vw;margin:0 auto}
+  #lb .cap b{display:block;margin-bottom:5px;font-family:var(--disp);
+    font-size:15px;font-weight:400;letter-spacing:.04em;color:var(--ink)}
+  #lb .hint{position:absolute;left:0;right:0;bottom:22px;text-align:center;
+    font-family:var(--mono);font-size:9px;letter-spacing:.2em;
+    color:var(--ink-faint)}
+  #lb .x{position:absolute;top:16px;right:20px;font-size:13px;
+    width:34px;height:34px;border-radius:50%;padding:0;
+    font-family:var(--mono);color:var(--ink);cursor:pointer;
+    background:rgba(255,255,255,.05);border:1px solid var(--line)}
+  #lb .x:hover{border-color:var(--amber);color:var(--amber)}
+  .meta{width:270px;flex:0 0 auto;overflow:hidden;padding-top:2px}
+  .meta b{display:block;font-family:var(--disp);font-size:13.5px;font-weight:400;
+    letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .meta span{font-size:9.5px;letter-spacing:.1em;color:var(--ink-faint)}
+  .meta .tag{color:var(--amber);letter-spacing:.2em}
+  textarea{flex:1 1 auto;min-height:60px;padding:8px 10px;font-size:12px;
+    line-height:1.45;resize:vertical}
+  textarea:focus{outline:none;border-color:var(--amber)}
+  .empty{padding:40px 12px;text-align:center;font-size:11px;letter-spacing:.16em;
+    color:var(--ink-faint)}
+
+  /* what the stub says, in three boxes you can argue with */
+  .fields{display:grid;grid-template-columns:auto 1fr;gap:5px 8px;
+    align-items:center;width:200px;flex:0 0 auto;padding-top:2px}
+  .fields label{font-size:8px;letter-spacing:.16em;color:var(--ink-faint);
+    text-align:right;white-space:nowrap}
+  .fields input{padding:4px 7px;font-size:10.5px;width:100%;
+    font-family:var(--mono);color:var(--ink);
+    background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:5px}
+  .fields input:focus{outline:none;border-color:var(--amber)}
+  /* changed from what data.js says, and not yet exported */
+  .fields input.edited{border-color:var(--amber);color:var(--amber);
+    background:rgba(216,162,74,.08)}
+  /* a showtime the passage cannot parse: it would fall back to 7:30pm
+     and put the night under the wrong sky */
+  .fields input.bad{border-color:#c05a4a;color:#e08878}
+
+  /* the same balloon the passage slides in from off frame, drawn the
+     same way — only shown whole here, since nothing is cutting it off
+     at the edge of the screen */
+  #prev{position:fixed;right:96px;bottom:52px;max-width:min(400px,44vw);
+    pointer-events:none;opacity:0;transform:translateX(20px);
+    transition:opacity .25s ease,transform .3s cubic-bezier(.16,.86,.26,1);z-index:5}
+  #prev.on{opacity:1;transform:none}
+  #prev .bub{position:relative;max-width:min(var(--saywd,300px),40vw);
+    padding:22px 30px 20px 28px;transform:rotate(-1.4deg);
+    filter:drop-shadow(0 16px 30px rgba(0,0,0,.55)) drop-shadow(0 4px 7px rgba(0,0,0,.4))}
+  #prev .paper{position:absolute;inset:0;z-index:0;
+    border:3px solid rgba(52,38,24,.72);
+    border-radius:36px 44px 32px 46px / 44px 34px 48px 34px;
+    background:radial-gradient(130% 120% at 20% 2%,rgba(255,253,244,.72),rgba(0,0,0,0) 58%),
+      var(--paper);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+  #prev .paper::after{content:"";position:absolute;inset:-5px -3px -2px -6px;
+    border:1.5px solid rgba(52,38,24,.28);border-radius:inherit;transform:rotate(.6deg)}
+  #prev .tail{position:absolute;right:-70px;bottom:11px;width:82px;height:56px;
+    z-index:1;overflow:visible}
+  #prev .tail path{fill:var(--paper);stroke:rgba(52,38,24,.72);stroke-width:3;
+    stroke-linecap:round;stroke-linejoin:round}
+  #prev p{position:relative;z-index:2;margin:0;white-space:pre-wrap;
+    font-family:var(--hand);font-size:min(var(--saysz,26px),6.2vw);line-height:1.16;
+    letter-spacing:.006em;color:#2f2a22;text-wrap:balance}
+  #prev .cap{margin-top:13px;text-align:right;font-size:8.5px;letter-spacing:.2em;
+    color:var(--ink-faint)}
+
+  footer{position:fixed;left:0;right:0;bottom:0;padding:9px 18px;
+    border-top:1px solid var(--line);background:rgba(13,11,10,.94);
+    backdrop-filter:blur(6px);font-size:9px;letter-spacing:.16em;color:var(--ink-faint)}
+  #toast{position:fixed;left:50%;top:16px;transform:translateX(-50%) translateY(-24px);
+    background:rgba(18,14,12,.95);border:1px solid var(--amber);color:var(--amber);
+    padding:9px 15px;border-radius:8px;font-size:10px;letter-spacing:.18em;
+    opacity:0;transition:.28s ease;z-index:9;pointer-events:none}
+  #toast.on{opacity:1;transform:translateX(-50%)}
+  @media (max-width:760px){.meta{width:150px}input[type=search]{width:150px}
+    #prev{display:none}.fields{width:150px}}
+</style>
+<script src="data.js"></script>
+<script src="captions.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>CAPTION DESK</h1>
+  <span class="sub">a line for every night</span>
+  <input type="search" id="q" placeholder="filter — title, theater, year…" autocomplete="off">
+  <label class="chk"><input type="checkbox" id="onlyblank"> only the blank ones</label>
+  <span class="tally" id="tally"></span>
+  <span class="sp"></span>
+  <button id="jump">GO TO TONIGHT</button>
+  <button id="exp">EXPORT captions.js</button>
+  <button id="expdata">EXPORT data.js</button>
+  <button id="revert" class="warn">REVERT TO FILE</button>
+  <a class="btn" href="ui-passage-pull.html">OPEN THE PASSAGE →</a>
+</header>
+
+<main id="list"></main>
+
+<div id="prev">
+  <div class="bub" id="prevbub">
+    <span class="paper"></span>
+    <svg class="tail" viewBox="0 0 82 56" aria-hidden="true">
+      <path d="M5 5 C 32 11, 58 26, 80 52 C 54 44, 28 35, 3 32"/>
+    </svg>
+    <p id="prevtx"></p>
+  </div>
+  <div class="cap">how it lands, off frame</div>
+</div>
+<div id="lb">
+  <button class="x" id="lbx" title="close">&#10005;</button>
+  <img id="lbimg" alt="">
+  <div class="cap" id="lbcap"></div>
+  <div class="hint">click anywhere to close&nbsp;&nbsp;·&nbsp;&nbsp;&#8592; &#8594; the next stub&nbsp;&nbsp;·&nbsp;&nbsp;R turns it</div>
+</div>
+<div id="toast"></div>
+
+<footer id="foot"></footer>
+
+<script>
+/* ================================================================
+   THE CAPTION DESK
+   One line per ticket, in your words — the thing the night was
+   actually about, which no receipt ever prints. The Passage reads
+   these and, once a stub is in the binder, has somebody just out of
+   shot say the line. A ticket with nothing written gets no bubble.
+
+   Two places a line can live:
+     captions.js  — a file you keep beside data.js (EXPORT writes it)
+     this browser — what you type, saved the instant you type it
+   The browser wins, so an edit here is never quietly undone by a
+   stale file; REVERT TO FILE throws the browser's copy away when the
+   file has caught up. The key is the ticket's own id, never its place
+   in the running order, so re-scanning the shoebox cannot shuffle
+   your lines onto the wrong nights.
+================================================================ */
+const KEY='passagepull.captions';
+const $=s=>document.querySelector(s);
+
+/* the same running order the passage walks, so #12 here is the
+   twelfth night there */
+const TICKETS=(window.TICKETS||[]).slice()
+  .sort((a,b)=>String(a.date||'9999').localeCompare(String(b.date||'9999')));
+const N=TICKETS.length;
+const MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+function fmtDate(d){
+  if(!d) return '';
+  const t=new Date(d+'T12:00:00');
+  if(isNaN(t)) return d;
+  return `${DAYS[t.getDay()]} ${MONTHS[t.getMonth()]} ${t.getDate()} ${t.getFullYear()}`;
+}
+
+const FILE=(window.CAPTIONS&&typeof window.CAPTIONS==='object')?window.CAPTIONS:{};
+let mine={};
+try{ mine=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(_){ mine={}; }
+const idOf=t=>String((t&&(t.id!=null?t.id:t.file))||'');
+const get=t=>{ const k=idOf(t); const v=(k in mine)?mine[k]:FILE[k]; return String(v||'').trim(); };
+function put(t,v){
+  mine[idOf(t)]=String(v||'').trim();
+  try{ localStorage.setItem(KEY,JSON.stringify(mine)); }
+  catch(_){ toast('THIS BROWSER WOULD NOT SAVE — EXPORT NOW'); }
+}
+const written=()=>TICKETS.reduce((n,t)=>n+(get(t)?1:0),0);
+
+/* ----------------------------------------------------------------
+   CORRECTIONS
+   The three fields worth arguing with while you look at the scan:
+   which house you were in, what time it started, what it cost. They
+   are kept apart from data.js — typed here, held in this browser, and
+   written back only when you EXPORT data.js — so the transcription of
+   record is never edited by a stray keystroke. The passage lays them
+   over the collection as it loads, so a fix shows in the rooms at once.
+---------------------------------------------------------------- */
+const EKEY='passagepull.edits';
+const FIELDS=[['aud','AUD','Aud 3 / Screen 2'],
+              ['showtime','TIME','7:15pm'],
+              ['price','PRICE','$5.00']];
+let edits={};
+try{ edits=JSON.parse(localStorage.getItem(EKEY)||'{}')||{}; }catch(_){ edits={}; }
+const orig=(t,f)=>t[f]==null?'':String(t[f]);
+const eff=(t,f)=>{ const e=edits[idOf(t)];
+  return (e&&e[f]!=null)?e[f]:orig(t,f); };
+function setField(t,f,v){
+  const k=idOf(t); v=String(v||'').trim();
+  const e=edits[k]||(edits[k]={});
+  if(v===orig(t,f)) delete e[f]; else e[f]=v;
+  if(!Object.keys(e).length) delete edits[k];
+  try{ localStorage.setItem(EKEY,JSON.stringify(edits)); }
+  catch(_){ toast('THIS BROWSER WOULD NOT SAVE — EXPORT NOW'); }
+}
+const editedCount=()=>Object.keys(edits).length;
+/* the same shape the passage parses; anything else falls back to 7:30 */
+const timeOK=v=>!v||/(\d{1,2})[:.](\d{2})\s*([ap])?/i.test(v);
+
+let toastT=0;
+function toast(msg){
+  const el=$('#toast'); el.textContent=msg; el.classList.add('on');
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('on'),2600);
+}
+function tally(){
+  const w=written(), e=editedCount();
+  $('#tally').innerHTML=`<b>${w}</b> of ${N} written`+
+    (e?` · <b>${e}</b> corrected`:'');
+}
+
+/* ---- the list ---------------------------------------------------- */
+const list=$('#list');
+const cur=Math.min(N-1,Math.max(0,parseInt(localStorage.getItem('passagepull.idx')||'0',10)||0));
+const rows=TICKETS.map((t,i)=>{
+  const row=document.createElement('div');
+  row.className='row'; row.dataset.i=i;
+  row.innerHTML=
+    `<img loading="lazy" src="thumbs/${t.file}" alt="">`+
+    `<div class="meta"><b></b><span></span></div>`+
+    `<div class="fields">`+FIELDS.map(([f,lab,ph])=>
+      `<label for="f-${f}-${i}">${lab}</label>`+
+      `<input id="f-${f}-${i}" data-f="${f}" placeholder="${ph}" autocomplete="off">`).join('')+
+    `</div>`+
+    `<textarea rows="2" placeholder="what this night was about…"></textarea>`;
+  row.querySelector('b').textContent=`${i+1}. ${t.title||t.title_raw||'—'}`;
+  row.querySelector('.meta span').innerHTML=
+    [fmtDate(t.date),t.theater_short||t.theater||'',t.price||'']
+      .filter(Boolean).join('  ·  ')+
+    (i===cur?'  <span class="tag">TONIGHT</span>':'');
+  /* one box per field, showing the correction if there is one and the
+     transcription if there is not */
+  row.querySelectorAll('.fields input').forEach(inp=>{
+    const f=inp.dataset.f;
+    const paint=()=>{
+      inp.classList.toggle('edited',inp.value.trim()!==orig(t,f));
+      inp.classList.toggle('bad',f==='showtime'&&!timeOK(inp.value.trim()));
+    };
+    inp.value=eff(t,f); paint();
+    inp.addEventListener('input',()=>{ setField(t,f,inp.value); paint(); tally(); });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Escape') inp.blur(); });
+  });
+  const thumb=row.querySelector('img');
+  thumb.title='click for the full scan';
+  thumb.addEventListener('click',()=>LB.show(i));
+  const ta=row.querySelector('textarea');
+  ta.value=get(t);
+  row.classList.toggle('has',!!ta.value);
+  row.classList.toggle('cur',i===cur);
+  /* typing IS saving — there is no save button to forget */
+  ta.addEventListener('input',()=>{
+    put(t,ta.value);
+    row.classList.toggle('has',!!ta.value.trim());
+    tally(); preview(ta.value);
+  });
+  ta.addEventListener('focus',()=>preview(ta.value));
+  ta.addEventListener('blur',()=>preview(''));
+  list.appendChild(row);
+  return row;
+});
+if(!N) list.innerHTML='<div class="empty">NO TICKETS — IS data.js NEXT DOOR?</div>';
+tally();
+
+/* ---- the preview, exactly the bubble the passage slides in ------- */
+function preview(text){
+  text=String(text||'').trim();
+  $('#prevtx').textContent=text;
+  /* the passage sizes the hand and the balloon to the length of the
+     line — so does this, by the same numbers */
+  const b=$('#prevbub'), n=text.length;
+  b.style.setProperty('--saysz',n<46?'30px':n<110?'26px':'22px');
+  b.style.setProperty('--saywd',n<46?'212px':n<110?'300px':'330px');
+  $('#prev').classList.toggle('on',!!text);
+}
+
+/* ----------------------------------------------------------------
+   THE SCAN, FULL SIZE
+   Several stubs in any collection are printed upside down, or are the
+   reverse side showing through, so it turns as well as opens: R goes
+   round in quarters, and the fitting swaps its bounds when the paper
+   is on its side, or a turned scan would run off the screen.
+---------------------------------------------------------------- */
+const LB=(()=>{
+  const el=$('#lb'), img=$('#lbimg'), cap=$('#lbcap');
+  let at=-1, rot=0;
+  const isOpen=()=>el.classList.contains('on');
+  function fit(){
+    const turned=rot%180!==0;
+    img.style.transform='translate(-50%,-50%) rotate('+rot+'deg)';
+    /* on its side the bounds swap, or a turned scan runs off the edge */
+    img.style.maxWidth =turned?'72vh':'min(92vw,1100px)';
+    img.style.maxHeight=turned?'min(92vw,1100px)':'72vh';
+  }
+  function show(i){
+    if(i<0||i>=N) return;
+    at=i; rot=0;
+    const t=TICKETS[i];
+    img.src='images/'+t.file;
+    /* the corrected values, not the transcribed ones — you are here to
+       check what you just typed against the paper */
+    cap.innerHTML='<b>'+((t.title||t.title_raw||'—')+'').replace(/</g,'&lt;')+'</b>'+
+      [String(i+1)+' of '+N,fmtDate(t.date),t.theater||'',
+       eff(t,'showtime'),eff(t,'price'),eff(t,'aud')]
+      .filter(Boolean).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+    fit();
+    el.classList.add('on');
+    /* keys belong to the viewer while it is up, not to whatever box
+       happened to have the caret */
+    if(document.activeElement&&document.activeElement.blur)
+      document.activeElement.blur();
+  }
+  function close(){ el.classList.remove('on'); img.src=''; }
+  function step(d){
+    const i=at+d;
+    if(i<0||i>=N) return;
+    show(i);
+    /* leave the list where the viewer got to */
+    if(rows[i]) rows[i].scrollIntoView({block:'center'});
+  }
+  function turn(){ rot=(rot+90)%360; fit(); }
+  el.addEventListener('click',close);
+  img.addEventListener('click',e=>e.stopPropagation());
+  $('#lbx').addEventListener('click',e=>{e.stopPropagation();close();});
+  addEventListener('keydown',e=>{
+    if(!isOpen()) return;
+    if(e.key==='Escape'){ close(); }
+    else if(e.key==='ArrowRight'){ step(1); }
+    else if(e.key==='ArrowLeft'){ step(-1); }
+    else if(e.key==='r'||e.key==='R'){ turn(); }
+    else return;
+    e.preventDefault();
+  });
+  return {show,close,isOpen};
+})();
+
+/* ---- filtering ---------------------------------------------------- */
+function filter(){
+  const q=$('#q').value.trim().toLowerCase();
+  const blanks=$('#onlyblank').checked;
+  let shown=0;
+  rows.forEach((r,i)=>{
+    const t=TICKETS[i];
+    const hay=[t.title,t.title_raw,t.theater,t.theater_short,t.date,t.year,get(t)]
+      .filter(Boolean).join(' ').toLowerCase();
+    const ok=(!q||hay.includes(q))&&(!blanks||!get(t));
+    r.style.display=ok?'':'none';
+    if(ok) shown++;
+  });
+  if(!shown&&N) toast('NOTHING MATCHES');
+}
+$('#q').addEventListener('input',filter);
+$('#onlyblank').addEventListener('change',filter);
+$('#jump').addEventListener('click',()=>{
+  const r=rows[cur];
+  if(r){ r.style.display=''; r.scrollIntoView({block:'center',behavior:'smooth'}); }
+});
+
+/* ---- export: captions.js, the exact shape both pages read -------- */
+$('#exp').addEventListener('click',()=>{
+  const lines=TICKETS.filter(t=>get(t)).map(t=>
+    `  ${JSON.stringify(idOf(t))}: ${JSON.stringify(get(t))}`);
+  const src='/* Captions for The Passage — keyed by ticket id (data.js "id").\n'+
+    '   Written at the caption desk: captions.html.\n'+
+    '   A ticket with a line here gets a bubble from off frame once its\n'+
+    '   stub is in the binder; a ticket with no line gets none. */\n'+
+    'window.CAPTIONS = {\n'+lines.join(',\n')+'\n};\n';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([src],{type:'text/javascript'}));
+  a.download='captions.js'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  try{ if(navigator.clipboard) navigator.clipboard.writeText(src); }catch(_){}
+  toast(`${lines.length} LINES → captions.js (ALSO COPIED)`);
+});
+
+/* ---- export the collection itself, corrections folded in ---------
+   Written in data.js's own shape and its own order (by id, one key to
+   a line) so that dropping it in leaves a diff of the lines you
+   actually changed rather than of the whole file. */
+/* Written the way Python's json.dump(indent=0) writes it, which is
+   what made the file in the first place: one key to a line, arrays
+   opened out. Matching it means a re-export shows a diff of the fields
+   that changed rather than of all 186 records. */
+function dumpTickets(list){
+  const val=v=>Array.isArray(v)
+    ? (v.length?'[\n'+v.map(x=>JSON.stringify(x)).join(',\n')+'\n]':'[]')
+    : JSON.stringify(v);
+  return 'window.TICKETS = [\n'+list.map(o=>'{\n'+Object.keys(o).map(k=>
+    JSON.stringify(k)+': '+val(o[k])).join(',\n')+'\n}').join(',\n')+'\n];\n';
+}
+$('#expdata').addEventListener('click',async()=>{
+  /* Re-read data.js off disk before writing it back. This page holds
+     the collection as it was the moment it loaded, and writing THAT
+     out would quietly undo anything changed in the file since — which
+     is exactly how a corrected title got rolled back once: the desk
+     had been open since before the correction, and exporting put the
+     old title back. The corrections are applied to whatever the file
+     says NOW, by ticket id, so a stale tab can only ever add. */
+  let base=null;
+  try{
+    const txt=await (await fetch('data.js?'+Date.now(),{cache:'no-store'})).text();
+    base=JSON.parse(txt.slice(txt.indexOf('['),txt.lastIndexOf(']')+1));
+  }catch(_){ base=null; }
+  if(!Array.isArray(base)||!base.length){
+    toast('COULD NOT RE-READ data.js \u2014 NOTHING WRITTEN'); return;
+  }
+  let changed=0, unknown=0;
+  const byId=base.slice().sort((a,b)=>(a.id||0)-(b.id||0)).map(t=>{
+    const e=edits[String(t.id!=null?t.id:t.file)];
+    if(!e) return t;
+    const o=Object.assign({},t);
+    for(const [f] of FIELDS){
+      if(e[f]==null) continue;
+      const v=e[f]===''?null:e[f];
+      if(v!==(t[f]==null?null:t[f])){ o[f]=v; changed++; }
+    }
+    return o;
+  });
+  const known=new Set(base.map(t=>String(t.id)));
+  for(const k of Object.keys(edits)) if(!known.has(k)) unknown++;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([dumpTickets(byId)],{type:'text/javascript'}));
+  a.download='data.js'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast(changed?`${changed} FIELD${changed===1?'':'S'} \u2192 data.js`
+               :'NO CORRECTIONS \u2014 data.js UNCHANGED');
+  if(unknown) console.warn(unknown+' correction(s) are for tickets not in data.js');
+});
+
+/* ---- revert: let the file be the truth again --------------------- */
+$('#revert').addEventListener('click',()=>{
+  if(!confirm('Throw away every caption typed in this browser and go back to '+
+              'what captions.js holds?\n\nExport first if you have not.')) return;
+  mine={}; edits={};
+  try{ localStorage.removeItem(KEY); localStorage.removeItem(EKEY); }catch(_){}
+  rows.forEach((r,i)=>r.querySelectorAll('.fields input').forEach(inp=>{
+    inp.value=orig(TICKETS[i],inp.dataset.f);
+    inp.classList.remove('edited','bad');
+  }));
+  rows.forEach((r,i)=>{
+    const ta=r.querySelector('textarea');
+    ta.value=get(TICKETS[i]);
+    r.classList.toggle('has',!!ta.value);
+  });
+  tally(); preview(''); toast('BACK TO THE FILE');
+});
+
+$('#foot').textContent=
+  'typing saves to this browser at once · EXPORT captions.js for the lines, EXPORT data.js '+
+  'for corrections to aud / time / price · the passage shows corrections as soon as you type '+
+  'them; data.js itself is only rewritten when you ask · REVERT throws both away';
+</script>
+</body>
+</html>
