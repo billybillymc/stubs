@@ -168,23 +168,6 @@ in a diff.
 
 ---
 
-## Making it your own
-
-The card in the corner behind the `i` button carries a byline and a
-"make your own" link. They are in `ui-passage-pull.html` — search for
-`class="sig"`. Put your own name there if you publish your version;
-a line of credit back to the original is appreciated but the wording is
-yours.
-
-The three rooms are a cinema, a corridor and a bedroom because that is
-the shape of a night at the pictures. They are also just three
-Three.js scenes with a common interface — `enter`, `grab`, `drag`,
-`release`, `exit` — so if your collection is concert tickets or train
-tickets or museum stubs, the rooms are the part to rewrite, and
-`CLAUDE.md` says where the seams are.
-
----
-
 *Built by Billy Gardner McIntyre — <https://gardnermcintyre.com>*
 *Source: <https://github.com/billybillymc/stubs>*
 
