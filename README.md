@@ -167,4 +167,4 @@ in a diff.
 
 *See it live <https://gardnermcintyre.com/stubs>*
 
-*Licence: MIT — see `LICENSE`.
+*License: MIT — see `LICENSE`.
