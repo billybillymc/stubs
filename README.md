@@ -1,15 +1,11 @@
-# Ticket Stubs — a harness to create a UI browsing your movie ticket stubs
+# Ticket Stubs — a harness to create a UI for browsing your movie ticket stubs
 
-A way for you to relive every ticket stub in your collection:
-you tear the ticket outside the cinema, pocket the stub at the
-auditorium door, and file it in a binder on a desk at home. It is built
-in Three.js, runs from a folder of files with no build step, and it is
-handed to you with the engine finished so you can start from a working
-thing rather than from nothing.
+Relive every ticket stub in your collection. You tear the ticket outside the cinema, 
+pocket the stub at the auditorium door, and file it in a binder on a desk at home. 
 
-Six invented tickets ship with it. Swapping in your own collection is
-the whole job, and there is a page inside the kit for writing down what 
-each night was actually about for you.
+Built in Three.js, runs from a folder of files with no build step, and
+comes with the engine finished so you can start from a working thing rather than from nothing.
+Designed to work well with a coding agent.
 
 ---
 
@@ -19,7 +15,7 @@ It has to be served over HTTP. ES modules and canvas textures will not
 load from a `file://` URL.
 
 ```
-cd ticket_scans_harness
+cd stubs
 python tools/serve.py
 ```
 
@@ -45,9 +41,10 @@ Node's built-in `fetch` and `WebSocket`, which older Nodes do not have.
 ## Make it yours
 
 **1. Scan your stubs.** One image per ticket, in `images/`, named
-however you like — `t001.jpg`, `t002.jpg` is the convention the sample
-uses. A phone photo on a flat surface is fine. Keep the whole ticket in
-frame; the page cuts the 3D stub to the scan's aspect ratio.
+however you like. (`t001.jpg`, `t002.jpg` is the convention the sample
+uses.)
+
+I used Google Drive's camera scanner for this part.
 
 **2. Build the thumbnails.**
 
@@ -66,9 +63,12 @@ python tools/scaffold-data.py
 
 That reads `images/` and writes `data.new.js` with every ticket's file
 name and pixel size filled in and everything else `null`. Fill in the
-blanks and rename it over `data.js`. This is something a coding agent is
-genuinely great at: hand it a scan and the empty record and ask it to
-read the ticket. **`docs/TRANSCRIBING.md` is written for that**: it has
+blanks and rename it over `data.js`.
+
+This is something a coding agent is genuinely great at: hand it a scan
+and the empty record and ask it to read the ticket.
+
+**`docs/TRANSCRIBING.md`is written for that**: it has
 the prompt, the field-by-field rules, and the traps that make this
 harder than it looks (box-office printers truncate titles, stubs get
 scanned face-down, and the date is often only legible in the
@@ -101,7 +101,7 @@ into somebody's collection, and no agent can do it for you.
 
 ---
 
-## What is in the box
+## What's in the box
 
 ```
 ui-passage-pull.html   the page: markup, all the CSS, and one script tag
@@ -138,11 +138,6 @@ CLAUDE.md              orientation for a coding agent
 LICENSE                MIT
 ```
 
-Nothing here phones home. Poster art is fetched from Wikipedia once, by
-`tools/fetch-posters.mjs`, and kept in `posters/`; a title that has no
-local file yet is looked up at run time as a fallback, and a title
-nobody has a picture of gets a drawn card.
-
 ---
 
 ## Working on it with an agent
@@ -168,12 +163,7 @@ in a diff.
 
 ---
 
-*Built by Billy Gardner McIntyre — <https://gardnermcintyre.com>*
-*Source: <https://github.com/billybillymc/stubs>*
+*Built by Billy Gardner McIntyre <https://gardnermcintyre.com>*
+*Source <https://github.com/billybillymc/stubs>*
 
-*Licence: MIT — see `LICENSE`. The props under `lamp-steampunk.js` and
-friends were generated for this project and are covered by it; the film
-almanac in `films.js` is public-domain fact. The poster images are
-Wikipedia's, fetched by `tools/fetch-posters.mjs` under Wikipedia's own
-terms; the sample set that ships in `posters/` is there so the kit runs
-offline, and each one remains the property of its studio.*
+*Licence: MIT — see `LICENSE`.
