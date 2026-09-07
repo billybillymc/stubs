@@ -1,4 +1,4 @@
-# The Passage — a harness for your own ticket stubs
+# Ticket Stubs — a harness to create a UI browsing your movie ticket stubs
 
 A way for you to relive every ticket stub in your collection:
 you tear the ticket outside the cinema, pocket the stub at the
