@@ -1,5 +1,7 @@
 # Ticket Stubs — a harness to create a UI for browsing your movie ticket stubs
 
+*See it live <https://gardnermcintyre.com/stubs>*
+
 Relive every ticket stub in your collection. You tear the ticket outside the cinema, 
 pocket the stub at the auditorium door, and file it in a binder on a desk at home. 
 
@@ -22,6 +24,10 @@ python tools/serve.py
 Then open **http://localhost:8713/ui-passage-pull.html**.
 
 Click the ticket and pull down. Press `i` for the instructions.
+
+On a phone the rooms do not fit, so the page shows a note saying so and
+a swipeable reel of the scans instead, each with its card and caption.
+Nothing 3D is downloaded there.
 
 `serve.py` is Python's own static server with caching switched off.
 Plain `python -m http.server` works too, but it sends no cache headers,
@@ -164,7 +170,5 @@ in a diff.
 ---
 
 *Built by Billy Gardner McIntyre <https://gardnermcintyre.com>*
-
-*See it live <https://gardnermcintyre.com/stubs>*
 
 *License: MIT — see `LICENSE`.

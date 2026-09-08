@@ -4,6 +4,17 @@
 <meta charset="utf-8">
 <title>Ticket Stubs</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- what a link to this page unfolds into on LinkedIn, iMessage and the
+     rest: they read these tags, never the scene. og:url and og:image
+     must be ABSOLUTE and point at wherever you publish this; a still of
+     your own marquee at 1200x630 or so makes a good og.jpg. -->
+<meta name="description" content="A collection of movie tickets, walked one night at a time: tear it outside the cinema, pocket the stub, file it in the binder at home.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ticket Stubs">
+<meta property="og:description" content="A collection of movie tickets, walked one night at a time: tear it outside the cinema, pocket the stub, file it in the binder at home.">
+<meta property="og:url" content="https://YOUR-SITE.example/stubs/">
+<meta property="og:image" content="https://YOUR-SITE.example/stubs/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -207,6 +218,48 @@
   @media (max-height:660px){#howto .bub{--saysz:17px;padding:16px 20px 14px 19px}
     #howto .keys{line-height:1.9}}
   @media (max-width:760px){#card{max-width:calc(100vw - 120px)}}
+  /* ------- THE SMALL SCREEN ---------------------------------------
+     A phone gets no rooms. Three lit sets, a hand and a binder need
+     the width of a desk, so below it the page becomes the shoebox
+     itself: one stub at a time, swiped through, with what was written
+     on the card beneath each. The note at the top says why. Decided
+     once, at load, before anything heavy is asked for. */
+  html.mobile #stage,html.mobile #hud,html.mobile #loader,html.mobile #pullhint,
+  html.mobile #say,html.mobile #howto,html.mobile #shield,html.mobile #fader{display:none}
+  #mobile{display:none;position:fixed;inset:0;z-index:60;flex-direction:column;
+    background:#0d0b0a}
+  html.mobile #mobile{display:flex}
+  #mobile .note{flex:none;margin:14px 18px 4px;padding:11px 16px 10px;
+    background:linear-gradient(rgba(140,110,60,.06),rgba(140,110,60,.14)),var(--paper);
+    border-radius:2px 5px 3px 6px;transform:rotate(-.8deg);
+    box-shadow:0 8px 20px rgba(0,0,0,.5);
+    font-family:var(--hand);font-size:19px;line-height:1.16;color:#2f2a22;
+    text-align:center;text-wrap:balance}
+  #mobile .reel{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;scrollbar-width:none}
+  #mobile .reel::-webkit-scrollbar{display:none}
+  #mobile .slide{flex:0 0 100%;min-width:0;scroll-snap-align:center;scroll-snap-stop:always;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:16px;padding:8px 22px 10px}
+  /* each scan lies a little differently, the way they do in the box */
+  #mobile .slide img{max-width:100%;max-height:50vh;width:auto;height:auto;
+    border-radius:2px;background:#1a1512;
+    box-shadow:0 14px 30px rgba(0,0,0,.6);transform:rotate(var(--tilt,0deg))}
+  #mobile .card{max-width:100%;padding:12px 18px 10px 20px;
+    background:linear-gradient(rgba(140,110,60,.06),rgba(140,110,60,.14)),
+      repeating-linear-gradient(0deg,transparent 0 25px,rgba(96,118,168,.15) 25px 26px),
+      var(--paper);
+    border-radius:2px 5px 3px 6px;transform:rotate(-1.2deg);
+    box-shadow:0 10px 26px rgba(0,0,0,.5)}
+  #mobile .card h2{font-family:var(--hand);font-size:26px;font-weight:700;line-height:1.02;
+    margin:0 0 2px;color:#233057}
+  #mobile .card .r{font-family:var(--hand);font-size:18px;line-height:1.22;color:var(--pen)}
+  #mobile .card .r b{color:#8c2f2a;font-weight:600}
+  #mobile .card .q{margin-top:7px;padding-top:6px;border-top:1px solid rgba(52,38,24,.2);
+    font-family:var(--hand);font-size:17px;line-height:1.16;color:#4d4438;white-space:pre-wrap}
+  #mobile .n{flex:none;margin:0;text-align:center;padding:6px 0 12px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--ink-faint)}
 </style>
 <script src="data.js"></script>
 <script src="captions.js"></script>
@@ -269,6 +322,53 @@
   <p id="lpct">0%</p>
 </div>
 
-<script type="module" src="./passage/main.js"></script>
+<div id="mobile">
+  <p class="note">Like cinema, this webpage is meant to be viewed on a bigger screen.</p>
+  <div class="reel"></div>
+  <p class="n"></p>
+</div>
+
+<script>
+/* The small screen, decided once. A phone is handed the shoebox and
+   never downloads three.js, the rooms or the thumbs; the module below
+   only boots the engine when this has not fired. The sort is the same
+   one tickets.js makes, so the swipe runs in the order the nights
+   happened and an undated stub lands at the end. */
+(function(){
+  var small=matchMedia('(max-width:600px), (pointer:coarse) and (max-width:1024px)').matches;
+  if(!small) return;
+  document.documentElement.classList.add('mobile');
+  var M=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'],
+      D=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  function when(d){ if(!d) return ''; var t=new Date(d+'T12:00:00');
+    return isNaN(t)?d:D[t.getDay()]+' '+M[t.getMonth()]+' '+t.getDate()+' '+t.getFullYear(); }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  var T=(window.TICKETS||[]).slice().sort(function(a,b){
+    return String(a.date||'9999').localeCompare(String(b.date||'9999')); });
+  var C=window.CAPTIONS||{};
+  var reel=document.querySelector('#mobile .reel'), n=document.querySelector('#mobile .n');
+  reel.innerHTML=T.map(function(t,i){
+    var title=t.title||t.title_raw||'\u2014', line=C[String(t.id)];
+    return '<div class="slide">'
+      +'<img src="images/'+esc(t.file)+'" alt="'+esc(title)+'" loading="lazy" decoding="async"'
+      +' style="--tilt:'+(((i%5)-2)*.7)+'deg">'
+      +'<div class="card"><h2>'+esc(title)+'</h2>'
+      +'<div class="r"><b>'+esc(when(t.date))+'</b>'
+      +(t.showtime?' \u2014 '+esc(String(t.showtime).toLowerCase()):'')+'</div>'
+      +'<div class="r">'+esc([t.theater||'',t.seat?'seat '+t.seat:'',t.price||'']
+        .filter(Boolean).join(' \u00b7 '))+'</div>'
+      +(line?'<div class="q">'+esc(line)+'</div>':'')
+      +'</div></div>';
+  }).join('');
+  function count(){ var i=Math.round(reel.scrollLeft/Math.max(1,reel.clientWidth));
+    n.textContent=Math.min(T.length,i+1)+' / '+T.length; }
+  reel.addEventListener('scroll',count,{passive:true}); count();
+  window.PASSAGE_MOBILE=true;
+})();
+</script>
+<script type="module">
+if(!window.PASSAGE_MOBILE) import('./passage/main.js');
+</script>
 </body>
 </html>

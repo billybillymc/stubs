@@ -11,8 +11,15 @@ Read this before changing anything. Most of it is scar tissue.
 
 ## The shape of it
 
-`ui-passage-pull.html` is a shell: markup, all of the CSS, and one
-`<script type="module" src="./passage/main.js">`. The engine is in
+`ui-passage-pull.html` is a shell: markup, all of the CSS, a small
+inline script that decides whether this is a phone, and a module that
+imports `./passage/main.js` only when it is not. On a small screen
+(`max-width:600px`, or a coarse pointer under 1024px) the page never
+loads three.js or a single thumb: it hands over `#mobile`, a
+scroll-snap reel of the scans with each ticket's card and caption
+under it, and a note at the top saying the piece wants a bigger
+screen. That view is plain DOM built from the same `window.TICKETS`,
+so it needs nothing from `passage/`. The engine is in
 `passage/`, one file per concern, and the three rooms are in
 `passage/acts/`. Data is four plain globals loaded by `<script src>`
 before the module: `window.TICKETS` (data.js), `window.CAPTIONS`
